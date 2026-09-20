@@ -1,254 +1,848 @@
-/* =========================================================
-   STAR SPORTS
-   Website JavaScript
-   ========================================================= */
+/* =========================================
+   STAR SPORTS — MAIN JAVASCRIPT
+   ========================================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    /* ---------- ELEMENTS ---------- */
+
+    const menuBtn = document.getElementById("menuBtn");
+    const nav = document.getElementById("nav");
+
+    const searchBtn = document.getElementById("searchBtn");
+    const searchPanel = document.getElementById("searchPanel");
+    const closeSearch = document.getElementById("closeSearch");
+    const searchInput = document.getElementById("searchInput");
+
+    const cartBtn = document.getElementById("cartBtn");
+    const cartPanel = document.getElementById("cartPanel");
+    const closeCart = document.getElementById("closeCart");
+
+    const wishlistBtn = document.getElementById("wishlistBtn");
+    const wishlistPanel = document.getElementById("wishlistPanel");
+    const closeWishlist = document.getElementById("closeWishlist");
+
+    const overlay = document.getElementById("panelOverlay");
+
+    const cartItems = document.getElementById("cartItems");
+    const cartTotal = document.getElementById("cartTotal");
+    const cartCount = document.getElementById("cartCount");
+
+    const wishlistItems = document.getElementById("wishlistItems");
+    const wishlistCount = document.getElementById("wishlistCount");
+
+    const checkoutBtn = document.getElementById("checkoutBtn");
+
+    const toast = document.getElementById("toast");
+
+    /* ---------- STORAGE ---------- */
+
+    let cart = JSON.parse(localStorage.getItem("starSportsCart")) || [];
+    let wishlist = JSON.parse(localStorage.getItem("starSportsWishlist")) || [];
 
 
-/* ---------- MOBILE MENU ---------- */
+    /* ---------- HELPERS ---------- */
 
-const menuBtn = document.querySelector(".menu-btn");
-const navMenu = document.querySelector(".nav-menu");
+    function saveCart() {
+        localStorage.setItem("starSportsCart", JSON.stringify(cart));
+    }
 
-if (menuBtn) {
+    function saveWishlist() {
+        localStorage.setItem(
+            "starSportsWishlist",
+            JSON.stringify(wishlist)
+        );
+    }
 
-    menuBtn.addEventListener("click", () => {
+    function formatPrice(price) {
+        return "₹" + Number(price).toLocaleString("en-IN");
+    }
 
-        navMenu.classList.toggle("active");
+    function showToast(message) {
+        if (!toast) return;
 
-        const icon = menuBtn.querySelector("i");
-
-        if (navMenu.classList.contains("active")) {
-
-            icon.classList.remove("fa-bars");
-            icon.classList.add("fa-xmark");
-
-        } else {
-
-            icon.classList.remove("fa-xmark");
-            icon.classList.add("fa-bars");
-
-        }
-
-    });
-
-}
-
-
-/* ---------- CLOSE MOBILE MENU AFTER CLICK ---------- */
-
-const navLinks = document.querySelectorAll(".nav-menu a");
-
-navLinks.forEach(link => {
-
-    link.addEventListener("click", () => {
-
-        navMenu.classList.remove("active");
-
-        if (menuBtn) {
-
-            const icon = menuBtn.querySelector("i");
-
-            icon.classList.remove("fa-xmark");
-            icon.classList.add("fa-bars");
-
-        }
-
-    });
-
-});
-
-
-/* ---------- SHOPPING CART ---------- */
-
-let cartCount = 0;
-
-const cartCounter = document.querySelector(".cart-count");
-
-const addCartButtons = document.querySelectorAll(".add-cart");
-
-addCartButtons.forEach(button => {
-
-    button.addEventListener("click", () => {
-
-        cartCount++;
-
-        cartCounter.textContent = cartCount;
-
-        /* Button animation */
-
-        button.innerHTML = '<i class="fa-solid fa-check"></i>';
-
-        button.style.background = "#d90429";
+        toast.textContent = message;
+        toast.classList.add("show");
 
         setTimeout(() => {
+            toast.classList.remove("show");
+        }, 2500);
+    }
 
-            button.innerHTML = '<i class="fa-solid fa-plus"></i>';
 
-            button.style.background = "";
+    /* ---------- MOBILE MENU ---------- */
 
-        }, 1000);
+    if (menuBtn) {
+        menuBtn.addEventListener("click", () => {
+            nav.classList.toggle("active");
+            menuBtn.classList.toggle("active");
+        });
+    }
 
+    document.querySelectorAll(".nav a").forEach(link => {
+        link.addEventListener("click", () => {
+            nav.classList.remove("active");
+            menuBtn?.classList.remove("active");
+        });
     });
 
-});
+
+    /* ---------- PANELS ---------- */
+
+    function openPanel(panel) {
+        panel?.classList.add("active");
+        overlay?.classList.add("active");
+        document.body.classList.add("no-scroll");
+    }
+
+    function closePanels() {
+        cartPanel?.classList.remove("active");
+        wishlistPanel?.classList.remove("active");
+        overlay?.classList.remove("active");
+        document.body.classList.remove("no-scroll");
+    }
+
+    cartBtn?.addEventListener("click", () => {
+        renderCart();
+        openPanel(cartPanel);
+    });
+
+    closeCart?.addEventListener("click", closePanels);
+
+    wishlistBtn?.addEventListener("click", () => {
+        renderWishlist();
+        openPanel(wishlistPanel);
+    });
+
+    closeWishlist?.addEventListener("click", closePanels);
+
+    overlay?.addEventListener("click", closePanels);
 
 
-/* ---------- WISHLIST ---------- */
+    /* ---------- SEARCH ---------- */
 
-const wishlistButtons = document.querySelectorAll(".wishlist");
+    searchBtn?.addEventListener("click", () => {
+        searchPanel?.classList.add("active");
+        searchInput?.focus();
+    });
 
-wishlistButtons.forEach(button => {
+    closeSearch?.addEventListener("click", () => {
+        searchPanel?.classList.remove("active");
+        searchInput.value = "";
+        filterProducts("");
+    });
 
-    button.addEventListener("click", () => {
+    searchInput?.addEventListener("input", () => {
+        filterProducts(searchInput.value.toLowerCase().trim());
+    });
 
-        button.classList.toggle("active");
+    function filterProducts(searchTerm) {
 
-        const icon = button.querySelector("i");
+        const products = document.querySelectorAll(".product-card");
+        let found = false;
 
-        if (button.classList.contains("active")) {
+        products.forEach(product => {
 
-            icon.classList.remove("fa-regular");
-            icon.classList.add("fa-solid");
+            const name =
+                product.dataset.name?.toLowerCase() || "";
 
-        } else {
+            const category =
+                product.dataset.category?.toLowerCase() || "";
 
-            icon.classList.remove("fa-solid");
-            icon.classList.add("fa-regular");
+            if (
+                searchTerm === "" ||
+                name.includes(searchTerm) ||
+                category.includes(searchTerm)
+            ) {
+                product.style.display = "";
+                found = true;
+            } else {
+                product.style.display = "none";
+            }
+        });
 
+        if (searchTerm && !found) {
+            showToast("No products found");
         }
-
-    });
-
-});
+    }
 
 
-/* ---------- SEARCH BUTTON ---------- */
+    /* ---------- PRODUCT DATA ---------- */
 
-const searchButton = document.querySelector(
-    '.icon-btn[aria-label="Search"]'
-);
+    function getProductData(productCard) {
 
-if (searchButton) {
+        return {
+            id: productCard.dataset.name,
+            name: productCard.dataset.name,
+            category: productCard.dataset.category,
+            price: Number(productCard.dataset.price),
+            icon:
+                productCard.querySelector(".product-image i")
+                    ?.className || "fa-solid fa-basketball"
+        };
+    }
 
-    searchButton.addEventListener("click", () => {
 
-        const searchTerm = prompt(
-            "What sports item are you looking for?"
-        );
+    /* ---------- ADD TO CART ---------- */
 
-        if (searchTerm && searchTerm.trim() !== "") {
+    document.querySelectorAll(".add-cart").forEach(button => {
 
-            alert(
-                "Searching Star Sports for: " +
-                searchTerm.trim()
+        button.addEventListener("click", () => {
+
+            const productCard = button.closest(".product-card");
+
+            if (!productCard) return;
+
+            const product = getProductData(productCard);
+
+            const existingProduct = cart.find(
+                item => item.id === product.id
             );
 
-        }
+            if (existingProduct) {
+                existingProduct.quantity += 1;
+            } else {
+                cart.push({
+                    ...product,
+                    quantity: 1
+                });
+            }
 
+            saveCart();
+            updateCartCount();
+            renderCart();
+
+            showToast(`${product.name} added to cart`);
+        });
     });
 
-}
+
+    /* ---------- CART COUNT ---------- */
+
+    function updateCartCount() {
+
+        const totalQuantity = cart.reduce(
+            (total, item) => total + item.quantity,
+            0
+        );
+
+        if (cartCount) {
+            cartCount.textContent = totalQuantity;
+        }
+    }
 
 
-/* ---------- NEWSLETTER ---------- */
+    /* ---------- RENDER CART ---------- */
 
-const newsletterForm =
-    document.querySelector(".newsletter-form");
+    function renderCart() {
 
-if (newsletterForm) {
+        if (!cartItems) return;
 
-    newsletterForm.addEventListener("submit", (event) => {
+        if (cart.length === 0) {
+
+            cartItems.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <h3>Your cart is empty</h3>
+                    <p>Add some sports gear to get started.</p>
+                </div>
+            `;
+
+            if (cartTotal) {
+                cartTotal.textContent = "₹0";
+            }
+
+            return;
+        }
+
+        cartItems.innerHTML = "";
+
+        let total = 0;
+
+        cart.forEach(item => {
+
+            total += item.price * item.quantity;
+
+            const div = document.createElement("div");
+
+            div.className = "cart-item";
+
+            div.innerHTML = `
+                <div class="cart-item-icon">
+                    <i class="${item.icon}"></i>
+                </div>
+
+                <div class="cart-item-info">
+                    <h4>${item.name}</h4>
+                    <p>${formatPrice(item.price)}</p>
+
+                    <div class="quantity-controls">
+                        <button class="qty-minus"
+                            data-id="${item.id}">
+                            −
+                        </button>
+
+                        <span>${item.quantity}</span>
+
+                        <button class="qty-plus"
+                            data-id="${item.id}">
+                            +
+                        </button>
+                    </div>
+                </div>
+
+                <button class="remove-cart"
+                    data-id="${item.id}">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            `;
+
+            cartItems.appendChild(div);
+        });
+
+        if (cartTotal) {
+            cartTotal.textContent = formatPrice(total);
+        }
+
+        addCartControls();
+    }
+
+
+    /* ---------- CART CONTROLS ---------- */
+
+    function addCartControls() {
+
+        document.querySelectorAll(".qty-minus").forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                const id = button.dataset.id;
+
+                const item = cart.find(
+                    product => product.id === id
+                );
+
+                if (!item) return;
+
+                if (item.quantity > 1) {
+                    item.quantity--;
+                } else {
+                    cart = cart.filter(
+                        product => product.id !== id
+                    );
+                }
+
+                saveCart();
+                updateCartCount();
+                renderCart();
+            });
+        });
+
+
+        document.querySelectorAll(".qty-plus").forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                const id = button.dataset.id;
+
+                const item = cart.find(
+                    product => product.id === id
+                );
+
+                if (!item) return;
+
+                item.quantity++;
+
+                saveCart();
+                updateCartCount();
+                renderCart();
+            });
+        });
+
+
+        document.querySelectorAll(".remove-cart").forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                const id = button.dataset.id;
+
+                cart = cart.filter(
+                    product => product.id !== id
+                );
+
+                saveCart();
+                updateCartCount();
+                renderCart();
+
+                showToast("Item removed from cart");
+            });
+        });
+    }
+
+
+    /* ---------- WISHLIST ---------- */
+
+    document.querySelectorAll(".product-wishlist").forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const productCard =
+                button.closest(".product-card");
+
+            if (!productCard) return;
+
+            const product = getProductData(productCard);
+
+            const exists = wishlist.some(
+                item => item.id === product.id
+            );
+
+            if (exists) {
+
+                wishlist = wishlist.filter(
+                    item => item.id !== product.id
+                );
+
+                button.classList.remove("active");
+
+                showToast("Removed from wishlist");
+
+            } else {
+
+                wishlist.push(product);
+
+                button.classList.add("active");
+
+                showToast("Added to wishlist");
+            }
+
+            saveWishlist();
+            updateWishlistCount();
+            renderWishlist();
+        });
+    });
+
+
+    /* ---------- WISHLIST COUNT ---------- */
+
+    function updateWishlistCount() {
+
+        if (wishlistCount) {
+            wishlistCount.textContent = wishlist.length;
+        }
+    }
+
+
+    /* ---------- UPDATE HEARTS ---------- */
+
+    function updateWishlistButtons() {
+
+        document
+            .querySelectorAll(".product-wishlist")
+            .forEach(button => {
+
+                const productCard =
+                    button.closest(".product-card");
+
+                if (!productCard) return;
+
+                const id = productCard.dataset.name;
+
+                const exists = wishlist.some(
+                    item => item.id === id
+                );
+
+                if (exists) {
+                    button.classList.add("active");
+                } else {
+                    button.classList.remove("active");
+                }
+            });
+    }
+
+
+    /* ---------- RENDER WISHLIST ---------- */
+
+    function renderWishlist() {
+
+        if (!wishlistItems) return;
+
+        if (wishlist.length === 0) {
+
+            wishlistItems.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-regular fa-heart"></i>
+                    <h3>Your wishlist is empty</h3>
+                    <p>Save products you love here.</p>
+                </div>
+            `;
+
+            return;
+        }
+
+        wishlistItems.innerHTML = "";
+
+        wishlist.forEach(item => {
+
+            const div = document.createElement("div");
+
+            div.className = "wishlist-item";
+
+            div.innerHTML = `
+                <div class="wishlist-item-icon">
+                    <i class="${item.icon}"></i>
+                </div>
+
+                <div class="wishlist-item-info">
+                    <h4>${item.name}</h4>
+                    <p>${formatPrice(item.price)}</p>
+                </div>
+
+                <button
+                    class="wishlist-remove"
+                    data-id="${item.id}">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+
+            wishlistItems.appendChild(div);
+        });
+
+        document
+            .querySelectorAll(".wishlist-remove")
+            .forEach(button => {
+
+                button.addEventListener("click", () => {
+
+                    const id = button.dataset.id;
+
+                    wishlist = wishlist.filter(
+                        item => item.id !== id
+                    );
+
+                    saveWishlist();
+                    updateWishlistCount();
+                    updateWishlistButtons();
+                    renderWishlist();
+
+                    showToast("Removed from wishlist");
+                });
+            });
+    }
+
+
+    /* ---------- CATEGORY FILTERS ---------- */
+
+    const filterButtons =
+        document.querySelectorAll(".filter-btn");
+
+    const categoryCards =
+        document.querySelectorAll(".category-card");
+
+
+    filterButtons.forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            filterButtons.forEach(btn =>
+                btn.classList.remove("active")
+            );
+
+            button.classList.add("active");
+
+            const category =
+                button.dataset.filter || "all";
+
+            applyCategoryFilter(category);
+        });
+    });
+
+
+    categoryCards.forEach(card => {
+
+        card.addEventListener("click", () => {
+
+            const category =
+                card.dataset.category;
+
+            filterButtons.forEach(btn => {
+
+                btn.classList.remove("active");
+
+                if (
+                    btn.dataset.filter === category
+                ) {
+                    btn.classList.add("active");
+                }
+            });
+
+            applyCategoryFilter(category);
+
+            document
+                .getElementById("shop")
+                ?.scrollIntoView({
+                    behavior: "smooth"
+                });
+        });
+    });
+
+
+    function applyCategoryFilter(category) {
+
+        const products =
+            document.querySelectorAll(".product-card");
+
+        let found = false;
+
+        products.forEach(product => {
+
+            const productCategory =
+                product.dataset.category;
+
+            if (
+                category === "all" ||
+                productCategory === category
+            ) {
+                product.style.display = "";
+                found = true;
+            } else {
+                product.style.display = "none";
+            }
+        });
+
+        if (!found && category !== "all") {
+            showToast(`No ${category} products available yet`);
+        }
+    }
+
+
+    /* ---------- OFFERS BUTTONS ---------- */
+
+    document.querySelectorAll("[data-offer-category]")
+        .forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                const category =
+                    button.dataset.offerCategory;
+
+                applyCategoryFilter(category);
+
+                document
+                    .getElementById("shop")
+                    ?.scrollIntoView({
+                        behavior: "smooth"
+                    });
+            });
+        });
+
+
+    /* ---------- NEWSLETTER ---------- */
+
+    const newsletterForm =
+        document.querySelector(".newsletter-form");
+
+    newsletterForm?.addEventListener("submit", event => {
 
         event.preventDefault();
 
-        const email =
-            newsletterForm.querySelector("input").value;
+        const input =
+            newsletterForm.querySelector("input");
 
-        if (email.trim() !== "") {
-
-            alert(
-                "Thank you for subscribing to Star Sports!"
-            );
-
-            newsletterForm.reset();
-
+        if (!input || !input.value.trim()) {
+            showToast("Please enter your email");
+            return;
         }
 
+        showToast("Thanks for subscribing!");
+
+        input.value = "";
     });
 
-}
+
+    /* ---------- CHECKOUT / ORDER ---------- */
+
+    checkoutBtn?.addEventListener("click", () => {
+
+        if (cart.length === 0) {
+            showToast("Your cart is empty");
+            return;
+        }
+
+        openOrderModal();
+    });
 
 
-/* ---------- SCROLL HEADER EFFECT ---------- */
+    function openOrderModal() {
 
-const header = document.querySelector(".header");
+        let modal =
+            document.getElementById("orderModal");
 
-window.addEventListener("scroll", () => {
+        if (!modal) {
 
-    if (window.scrollY > 50) {
+            modal = document.createElement("div");
 
-        header.style.boxShadow =
-            "0 8px 30px rgba(0,0,0,0.08)";
+            modal.id = "orderModal";
 
-    } else {
+            modal.innerHTML = `
+                <div class="order-modal-box">
 
-        header.style.boxShadow = "none";
+                    <button class="order-close"
+                        id="orderClose">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
 
+                    <div class="order-heading">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                        <h2>Place Your Order</h2>
+                        <p>Enter your details to continue.</p>
+                    </div>
+
+                    <form id="orderForm">
+
+                        <label>Full Name</label>
+                        <input
+                            type="text"
+                            id="customerName"
+                            placeholder="Your name"
+                            required
+                        >
+
+                        <label>Phone Number</label>
+                        <input
+                            type="tel"
+                            id="customerPhone"
+                            placeholder="Your phone number"
+                            required
+                        >
+
+                        <label>Payment Preference</label>
+
+                        <select id="paymentMethod">
+                            <option value="UPI">UPI</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
+                        </select>
+
+                        <label>Order Notes</label>
+
+                        <textarea
+                            id="orderNotes"
+                            placeholder="Any additional notes..."
+                            rows="3"
+                        ></textarea>
+
+                        <div class="order-summary">
+                            <span>Order Total</span>
+                            <strong>${cartTotal?.textContent || "₹0"}</strong>
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="order-submit">
+                            Confirm Order
+                        </button>
+
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            document
+                .getElementById("orderClose")
+                .addEventListener("click", closeOrderModal);
+
+            modal.addEventListener("click", event => {
+
+                if (event.target === modal) {
+                    closeOrderModal();
+                }
+            });
+
+            document
+                .getElementById("orderForm")
+                .addEventListener("submit", submitOrder);
+        }
+
+        modal.classList.add("active");
     }
 
-});
 
+    function closeOrderModal() {
 
-/* ---------- REVEAL ANIMATION ---------- */
+        const modal =
+            document.getElementById("orderModal");
 
-const revealElements = document.querySelectorAll(
-    ".category-card, .product-card, .feature, .about-text"
-);
-
-const revealObserver = new IntersectionObserver(
-    (entries) => {
-
-        entries.forEach(entry => {
-
-            if (entry.isIntersecting) {
-
-                entry.target.style.opacity = "1";
-                entry.target.style.transform =
-                    "translateY(0)";
-
-                revealObserver.unobserve(entry.target);
-
-            }
-
-        });
-
-    },
-    {
-        threshold: 0.12
+        modal?.classList.remove("active");
     }
-);
 
 
-revealElements.forEach(element => {
+    function submitOrder(event) {
 
-    element.style.opacity = "0";
-    element.style.transform = "translateY(25px)";
-    element.style.transition =
-        "opacity 0.7s ease, transform 0.7s ease";
+        event.preventDefault();
 
-    revealObserver.observe(element);
+        const name =
+            document.getElementById("customerName").value.trim();
+
+        const phone =
+            document.getElementById("customerPhone").value.trim();
+
+        if (!name || !phone) {
+            showToast("Please fill in your details");
+            return;
+        }
+
+        closeOrderModal();
+        closePanels();
+
+        showToast("Order details received successfully!");
+
+        /*
+          The current GitHub Pages website is a front-end site.
+          A real order/payment system can be connected later
+          using a backend, database, WhatsApp, or payment gateway.
+        */
+
+        cart = [];
+
+        saveCart();
+        updateCartCount();
+        renderCart();
+    }
+
+
+    /* ---------- ESCAPE KEY ---------- */
+
+    document.addEventListener("keydown", event => {
+
+        if (event.key === "Escape") {
+
+            closePanels();
+
+            searchPanel?.classList.remove("active");
+
+            closeOrderModal();
+        }
+    });
+
+
+    /* ---------- CURRENT YEAR ---------- */
+
+    const year =
+        document.getElementById("year");
+
+    if (year) {
+        year.textContent = new Date().getFullYear();
+    }
+
+
+    /* ---------- INITIAL STATE ---------- */
+
+    updateCartCount();
+    updateWishlistCount();
+    updateWishlistButtons();
+    renderCart();
+    renderWishlist();
 
 });
-
-
-/* ---------- CURRENT YEAR ---------- */
-
-const yearElement =
-    document.querySelector(".footer-bottom p");
-
-if (yearElement) {
-
-    yearElement.innerHTML =
-        `© ${new Date().getFullYear()} Star Sports. All rights reserved.`;
-
-}
